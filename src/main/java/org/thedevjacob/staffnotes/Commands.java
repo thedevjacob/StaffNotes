@@ -8,12 +8,9 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class Commands implements CommandExecutor {
 
@@ -36,30 +33,29 @@ public class Commands implements CommandExecutor {
         if (commandSender instanceof Player) {
 
             // Fetching our staff  player object
-            Player player = (Player) commandSender;
+            Player staff = (Player) commandSender;
 
+            // if they are passing in any arguments
+            if (args.length>0) {
+                OfflinePlayer player = checkUser(args, staff);
 
+                if (player != null) {
+                    // If the command usage is 'add', will be specified at index 1
+                    // ex: '/note Notch add {Note Contents}'
+                    if (args[1].equalsIgnoreCase("add")) {
+                        // If there is note content, add the note
+                        if (args.length > 2) {
+                            addNote(args, player, staff);
+                            Note chime = new Note(2, Note.Tone.F, true);
+                            staff.playNote(staff.getLocation(), Instrument.CHIME, chime);
+                            staff.sendMessage(formatMessage("Note successfully created!"));
+                        } else
+                            staff.sendMessage(formatErrorMessage("Command usage: /note {Username} add (Note Content)"));
+                    }
+                    else { staff.sendMessage(formatErrorMessage("Please type '/note help' for a list of commands.")); }
+                }
 
-            // Fetch our called player ID from name
-            String apiURL = "https://api.mojang.com/users/profiles/minecraft/" + args[0];
-            InputStreamReader conn = null;
-            BufferedReader inpStr = null;
-            String playerUUID = "";
-            try {
-                conn = new InputStreamReader(new URL(apiURL).openStream());
-                inpStr = new BufferedReader(conn);
-
-                playerUUID = (((JsonObject)new JsonParser().parse(inpStr)).get("id")).toString()
-                        .replaceAll("\"", "");
-
-            } catch (IOException e) {
-                player.sendMessage(
-                        formatErrorMessage("A Player could not be found with the specified Username.")
-                );
-                return true;
-            }
-
-            player.sendMessage(formatMessage("Player ID: " + playerUUID));
+            } else { staff.sendMessage(formatErrorMessage("Please type '/note help' for a list of commands.")); }
 
         }
 
@@ -70,12 +66,57 @@ public class Commands implements CommandExecutor {
     /**
      * Adds a note to a Player
      *
-     * @param player The Player to add the note to
-     * @param note The note to add to the Player
+     * @param args The arguments passed into the command
+     * @param player The player the note is for
+     * @param staff The staff member running the command
      * @return A boolean denoting the success of the note addition
      */
-    public boolean addNote(Player player, String note) {
+    public boolean addNote(String[] args, OfflinePlayer player, Player staff) {
+
         return false;
+    }
+
+    /**
+     * Checks whether a user is found with the given username
+     * The given username is in the args list at index [0]
+     *
+     * @param args The arguments given to us by the staff member
+     * @param staff A Player object of the staff member sending the command
+     * @return A boolean denoting if a user was found with the username
+     */
+    public OfflinePlayer checkUser(String[] args, Player staff) {
+        // The name of the player the note is being added to should be the argument at index 0
+        // ex: /note Notch add {Note Content}
+        String playerName = args[0];
+
+        // Get the player connected with the playerName
+        OfflinePlayer player = Bukkit.getPlayer(playerName);
+        if (player == null){
+            player = Bukkit.getOfflinePlayer(playerName);
+        }
+
+        // Get that player's UUID
+        // NOTE: May be the wrong player's UUID, if the playerName is invalid
+        UUID playerUUID = player.getUniqueId();
+
+        /* Check if the Username given to us is
+         1) a player that has joined the server, and
+         2) is the player that they want to add a note to */
+        try {
+            if (!(playerName.equals(Bukkit.getPlayer(playerUUID).getName()))) {
+                staff.sendMessage(
+                        formatErrorMessage("A Player could not be found with the specified Username.")
+                );
+                return null;
+            }
+        } catch (Exception e) {
+            staff.sendMessage(
+                    formatErrorMessage("A Player could not be found with the specified Username.")
+            );
+            return null;
+        }
+
+        return Bukkit.getPlayer(playerUUID);
     }
 
     /**
