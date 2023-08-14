@@ -37,9 +37,15 @@ public class Commands implements CommandExecutor {
 
             // if they are passing in any arguments
             if (args.length>0) {
+                // If the first argument is just the word 'help', then run the help command and ignore
+                if (args[0].equalsIgnoreCase("help")) {
+                    staff.sendMessage(formatHelp());
+                    return true;
+                }
+
                 OfflinePlayer player = checkUser(args, staff);
 
-                if (player != null) {
+                if (player != null && args.length > 1) {
                     // If the command usage is 'add', will be specified at index 1
                     // ex: '/note Notch add {Note Contents}'
                     if (args[1].equalsIgnoreCase("add")) {
@@ -49,13 +55,19 @@ public class Commands implements CommandExecutor {
                             Note chime = new Note(2, Note.Tone.F, true);
                             staff.playNote(staff.getLocation(), Instrument.CHIME, chime);
                             staff.sendMessage(formatMessage("Note successfully created!"));
-                        } else
+                            return true;
+                        }
+                        else {
                             staff.sendMessage(formatErrorMessage("Command usage: /note {Username} add (Note Content)"));
+                            return true;
+                        }
                     }
-                    else { staff.sendMessage(formatErrorMessage("Please type '/note help' for a list of commands.")); }
                 }
-
-            } else { staff.sendMessage(formatErrorMessage("Please type '/note help' for a list of commands.")); }
+                else if (player == null) {
+                    return true;
+                }
+            }
+            staff.sendMessage(formatErrorMessage("Please type '/note help' for a list of commands."));
 
         }
 
@@ -105,13 +117,13 @@ public class Commands implements CommandExecutor {
         try {
             if (!(playerName.equals(Bukkit.getPlayer(playerUUID).getName()))) {
                 staff.sendMessage(
-                        formatErrorMessage("A Player could not be found with the specified Username.")
+                        formatErrorMessage("A Player could not be found with the specified Username. /note help")
                 );
                 return null;
             }
         } catch (Exception e) {
             staff.sendMessage(
-                    formatErrorMessage("A Player could not be found with the specified Username.")
+                    formatErrorMessage("A Player could not be found with the given username.")
             );
             return null;
         }
@@ -120,7 +132,42 @@ public class Commands implements CommandExecutor {
     }
 
     /**
-     * Removes
+     *
+     *
+     * @return A string with the formatted help menu.
+     */
+    public String formatHelp() {
+        String helpMessage = "";
+        helpMessage += formatMessage("   Help Menu    ") + formatMessage("");
+
+        List<String> CommandNames = new ArrayList<>();
+        List<String> CommandUsages = new ArrayList<>();
+        // Help Menu
+        CommandNames.add("help");
+        CommandUsages.add("View this help menu.");
+        // Add Note
+        CommandNames.add("add");
+        CommandUsages.add("Add a note to a specified player.");
+        // Remove Note
+        CommandNames.add("remove");
+        CommandUsages.add("Remove a note from a specified player.");
+
+        int index = 1;
+        for (String command : CommandNames) {
+            helpMessage += ChatColor.GREEN + "\n   -> " + ChatColor.DARK_GREEN + "/note ";
+            helpMessage += ChatColor.GREEN + "{PlayerName} " + ChatColor.GREEN + command;
+            helpMessage += ChatColor.DARK_GREEN + " - " + ChatColor.GREEN + CommandUsages.get(index-1);
+            index += 1;
+        }
+
+        helpMessage += "\n" + formatMessage("   Help Menu    ") + formatMessage("");
+
+        return helpMessage;
+    }
+
+    /**
+     * Removes a note from the player's notes at a certain index
+     *
      * @param player The Player to add the note to
      * @param index The index of the note to remove from the Player (accessible via `listNotes(Player)`)
      * @return A boolean denoting the success of the note removal
