@@ -1,0 +1,4 @@
+name: StaffNotes
+version: '${project.version}'
+main: org.thedevjacob.staffnotes.StaffNotes
+api-version: '1.20'
